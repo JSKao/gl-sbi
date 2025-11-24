@@ -1,0 +1,24 @@
+# --- Python & System Junk ---
+__pycache__/
+*.pyc
+.DS_Store
+.ipynb_checkpoints/
+
+# --- Environments ---
+env/
+venv/
+.venv/
+
+# --- Large Data Files (絕對不要上傳) ---
+data/
+*.npz
+*.npy
+*.h5
+
+# --- IDE Settings (Optional) ---
+.vscode/
+.idea/
+
+# --- Allow Assets (確保成果圖被上傳) ---
+!assets/
+!assets/*.png
