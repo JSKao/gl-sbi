@@ -78,13 +78,13 @@ graph TD
 
 ## Structure
 
-|**Module**|**File**|**Description**|
-|---|---|---|
-|**Solver**|[`src/gl_jax.py`](https://www.google.com/search?q=src/gl_jax.py&authuser=1)|Implements TDGL equations with Peierls substitution for gauge invariance.|
-|**Training**|[`src/train_nre.py`](https://www.google.com/search?q=src/train_nre.py&authuser=1)|Main training loop implementing the contrastive loss for NRE.|
-|**Model**|[`src/model.py`](https://www.google.com/search?q=src/model.py&authuser=1)|Flax definitions for the CNN Encoder and MLP Classifier.|
-|**Generator**|[`src/simulator.py`](https://www.google.com/search?q=src/simulator.py&authuser=1)|Unified interface for generating data (used by both training and offline scripts).|
-|**Demo**|[`demo.py`](https://www.google.com/search?q=main.py&authuser=1)|An interactive `matplotlib` tool to visualize vortex dynamics in real-time.|
+| **Module**    | **File**                                                                          | **Description**                                                                    |
+| ------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Solver**    | [`src/gl_jax.py`](https://github.com/JSKao/ML-Phys/blob/main/src/gl_jax.py)       | Implements TDGL equations with Peierls substitution for gauge invariance.          |
+| **Training**  | [`src/train_nre.py`](https://github.com/JSKao/ML-Phys/blob/main/src/train_nre.py) | Main training loop implementing the contrastive loss for NRE.                      |
+| **Model**     | [`src/model.py`](https://github.com/JSKao/ML-Phys/blob/main/src/model.py)         | Flax definitions for the CNN Encoder and MLP Classifier.                           |
+| **Generator** | [`src/simulator.py`](https://github.com/JSKao/ML-Phys/blob/main/src/simulator.py) | Unified interface for generating data (used by both training and offline scripts). |
+| **Demo**      | [`demo.py`](https://github.com/JSKao/ML-Phys/blob/main/demo.py)                   | An interactive `matplotlib` tool to visualize vortex dynamics in real-time.        |
 
 ---
 
