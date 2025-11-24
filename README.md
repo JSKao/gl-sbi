@@ -98,7 +98,3 @@ python -m src.train_nre
 ```
 
 ---
-
-## 🔬 Theory Reference
-
-For details on the Multi-component Ginzburg-Landau Hamiltonian and the derivation of the NRE loss function, please refer to **[theory.md](https://www.google.com/search?q=theory.md&authuser=1)**.
