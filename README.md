@@ -3,25 +3,71 @@
 
 # GL-SBI: Ginzburg-Landau Parameter Inference via JAX & NRE
 
-**Inverse problem solver for Type-1.5 superconductors using differentiable physics and probabilistic programming.**
+**Solving inverse problems in Type-1.5 superconductors via Differentiable Physics and NRE.**
 
-This repository implements a pipeline to infer microscopic parameters (specifically the Josephson coupling $\eta$) of a two-component superconductor directly from macroscopic vortex density images.
-
-Because the likelihood function $p(x|\theta)$ for the chaotic Ginzburg-Landau dynamics is intractable, we employ **Neural Ratio Estimation (NRE)** to approximate the posterior distribution without explicit likelihood evaluation. The entire pipeline—from the finite-difference solver to the neural network—is built within the **JAX** ecosystem to leverage JIT compilation and massive vectorization.
+Standard likelihood estimation for chaotic Ginzburg-Landau dynamics is mathematically intractable. This project solves this by combining a **JAX-based finite-difference solver** with **Neural Ratio Estimation (NRE)** to infer microscopic couplings ($\eta$) directly from vortex observations.
 
 ---
 
 ## Inference Demo
 
-Below is a test run on synthetic data where the ground truth coupling is $\eta=0.8$.
+![**Figure 1: Posterior Inference.**](inference_result.png) The model recovers the ground truth coupling ($\eta=0.8$) with a calibrated uncertainty interval, capturing the inherent stochasticity of vortex formation.
 
-The model outputs a probability distribution rather than a single point estimate, capturing the uncertainty inherent in the chaotic vortex formation process.
+---
+
+## The Pipeline
+
+```mermaid
+graph TD
+    subgraph P1 ["Phase 1: Physics Simulation (Forward Model)"]
+        Prior["Prior p(θ)"] -->|Sample| Theta["Physical Parameters θ <br/>(η, B)"]
+        Theta -->|Input| Solver["TDGL Solver <br/>(JAX Kernel)"]
+        Solver -->|Evolve| X_raw["Vortex Density x"]
+    end
+
+    subgraph P2 ["Phase 2: Contrastive Batch Generation"]
+        Theta -- Identity --> Batch_Theta_Pos["Joint Parameters θ"]
+        X_raw -- Identity --> Batch_X_Pos["Joint Observables x"]
+        
+        Batch_Theta_Pos -.->|Assign| Label_1["Class y = 1 (Joint)"]
+        
+        Batch_Theta_Pos -- "Permutation (Roll)" --> Batch_Theta_Neg["Marginal Parameters θ'"]
+        Batch_X_Pos -- Identity --> Batch_X_Neg["Marginal Observables x"]
+        
+        Batch_Theta_Neg -.->|Assign| Label_0["Class y = 0 (Marginal)"]
+    end
+
+    subgraph P3 ["Phase 3: Neural Ratio Estimator Architecture"]
+        subgraph Right_Tower ["Parameter Branch"]
+            Batch_Theta_All["Concatenated θ, θ'"] --> MLP["Parameter MLP"] --> H_param["Embedding h_θ"]
+        end
+        
+        subgraph Left_Tower ["Visual Branch"]
+            Batch_X_All["Concatenated x"] --> CNN["CNN Encoder <br/>(ResNet + GAP)"] --> H_img["Embedding h_x"]
+        end
+        
+        H_param --> Fusion(("Feature Fusion <br/>(Concatenation)"))
+        H_img --> Fusion
+        
+        Fusion --> Head["Classifier Head <br/>(MLP)"]
+        Head --> Logit["Log-Likelihood Ratio <br/>(Logit s)"]
+    end
+
+    subgraph P4 ["Phase 4: Optimization Objective"]
+        Logit --> Sigmoid["Sigmoid Activation"] --> Y_pred["Estimated Probability ŷ"]
+        Label_All["Ground Truth y <br/>(1 or 0)"] --> Loss_Calc
+        Y_pred --> Loss_Calc["Binary Cross-Entropy <br/>(BCE Loss)"]
+        Loss_Calc -->|Gradient Descent| Update["Backpropagation <br/>& Weight Update"]
+    end
+```
+**Schematic of the Simulation-Based Inference pipeline.** (a) **Data Generation:** Parameters $\theta$ are sampled from the prior and passed to the TDGL solver to generate vortex density maps $x$. (b) **Contrastive Training:** Joint pairs $(\theta, x)$ are labeled as $y=1$, while marginal pairs $(\theta', x)$ are created by permuting parameters within the batch and labeled as $y=0$. (c) **Network Architecture:** A two-tower architecture processes $x$ (via CNN) and $\theta$ (via MLP) separately. Feature vectors are concatenated and fed into a decision head to estimate the likelihood-to-evidence ratio.
+
 
 ---
 
 ## Core Features
 
-- **Stateless Physics Engine**: A custom Time-Dependent Ginzburg-Landau (TDGL) solver written in pure JAX. It uses `jax.lax.scan` to unroll time evolution loops on the GPU/CPU, avoiding Python overhead.
+- **Stateless Physics Engine**: Custom TDGL solver implemented in pure JAX. Leveraging `jax.lax.scan` and `vmap` allows for **massive parallelization** on GPUs without Python loop overhead.
     
 - **Amortized Inference**: Unlike MCMC or ABC which require expensive simulations for every new observation, the NRE network is trained once and performs inference in milliseconds.
     
@@ -42,7 +88,7 @@ The model outputs a probability distribution rather than a single point estimate
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### 1. Prerequisites
 
