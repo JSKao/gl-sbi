@@ -117,7 +117,7 @@ if __name__ == "__main__":
     
     # 1. Load Data
     if not os.path.exists(cfg.data_path):
-        print(f"❌ Data file not found: {cfg.data_path}")
+        print(f"Data file not found: {cfg.data_path}")
         print("Please run 'python generate_data.py' first!")
         exit()
         
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     input_shape = train_ds['x'].shape[1:] # (128, 128, 2)
     state = create_train_state(rng, cfg.learning_rate, input_shape)
     
-    print(f"🚀 Starting Offline Training | Epochs: {cfg.n_epochs} | Batch: {cfg.batch_size}")
+    print(f"Starting Offline Training | Epochs: {cfg.n_epochs} | Batch: {cfg.batch_size}")
     
     # 3. Training Loop
     steps_per_epoch = len(train_ds['theta']) // cfg.batch_size

@@ -81,4 +81,4 @@ if __name__ == "__main__":
     
     output = model.apply(variables, dummy_image, dummy_theta)
     assert output.shape == (5, 1)
-    print("✅ Architecture Check Passed.")
+    print("Architecture Check Passed.")

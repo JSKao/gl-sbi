@@ -17,7 +17,7 @@ if __name__ == "__main__":
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
     
-    print(f"🏭 Offline Data Factory | Target: {N_SAMPLES} | Grid: {GRID_SIZE}")
+    print(f"Offline Data Factory | Target: {N_SAMPLES} | Grid: {GRID_SIZE}")
     
     # Instantiate shared logic
     data_gen = DataGenerator(grid_size=GRID_SIZE, evolve_steps=STEPS)

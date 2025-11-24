@@ -66,7 +66,7 @@ def train_step(state, batch_x, batch_theta):
 
 if __name__ == "__main__":
     cfg = TrainConfig()
-    print(f"🚀 Starting NRE Training | Batch: {cfg.batch_size} | Grid: {cfg.grid_size}")
+    print(f"Starting NRE Training | Batch: {cfg.batch_size} | Grid: {cfg.grid_size}")
     
     # 1. Setup
     master_key = jax.random.PRNGKey(cfg.seed)
