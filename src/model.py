@@ -1,26 +1,33 @@
+# src/model.py
 import jax
 import jax.numpy as jnp
 from flax import linen as nn
 from typing import Sequence
 
+
+from src.sim_config import ETA_MAX, B_MAX, NU_MAX
+
 class CNNEncoder(nn.Module):
     """
-    Convolutional Encoder for extracting geometric features from physical lattice systems.
-    Utilizes Global Average Pooling (GAP) to enforce translational invariance.
+    Convolutional Encoder. Replaced intermediate AvgPooling with MaxPooling 
+    to prevent signal dilution of sparse vortex features (Curl J).
     """
-    features: Sequence[int] = (32, 64, 64)
-    output_dim: int = 64
+    features: Sequence[int] = (64, 128, 128, 256)
+    output_dim: int = 128
     
     @nn.compact
     def __call__(self, x):
-        # Feature extraction
+        # Feature extraction layers
         for feat in self.features:
             x = nn.Conv(features=feat, kernel_size=(3, 3))(x)
             x = nn.relu(x)
-            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
+            # Use Max Pooling instead of Avg Pooling
+            x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2)) 
             
-        # Global Average Pooling: (B, H, W, C) -> (B, C)
-        x = jnp.mean(x, axis=(1, 2))
+        # Dual Pooling (Final stage) 
+        gap = jnp.mean(x, axis=(1, 2))
+        gmp = jnp.max(x, axis=(1, 2))
+        x = jnp.concatenate([gap, gmp], axis=-1)
         
         # Projection
         x = nn.Dense(features=self.output_dim)(x)
@@ -30,12 +37,25 @@ class CNNEncoder(nn.Module):
 class ParameterEmbedding(nn.Module):
     """
     High-dimensional embedding for scalar physical parameters.
+    Includes Input Normalization.
     """
-    output_dim: int = 64
+    output_dim: int = 128
     
     @nn.compact
     def __call__(self, x):
-        x = nn.Dense(features=32)(x)
+        # x shape: (Batch, 3) -> [eta, B, nu]
+        
+        # Manual Normalization
+        # Re-scale parameters to be within[0, 1] for learnability
+        eta = x[:, 0:1] / ETA_MAX
+        B   = x[:, 1:2] / B_MAX
+        nu  = x[:, 2:3] / NU_MAX
+        
+        # re-concatenate
+        x_norm = jnp.concatenate([eta, B, nu], axis=-1)
+        
+        
+        x = nn.Dense(features=64)(x_norm)
         x = nn.relu(x)
         x = nn.Dense(features=self.output_dim)(x)
         x = nn.relu(x)
