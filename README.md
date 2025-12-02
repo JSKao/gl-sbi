@@ -1,6 +1,6 @@
 
 
-# Inferring Microscopic Couplings in Type-1.5 Superconductors via Neural Ratio Estimation
+# Inferring Microscopic Couplings in Superconductors
 
 [![arXiv]]([YOUR_ARXIV_LINK_HERE])
 [![GitHub Stars](https://img.shields.io/github/stars/JSKao/ML-Phys.svg?style=social)](https://github.com/JSKao/ML-Phys)
@@ -20,7 +20,7 @@ We leverage a fully differentiable JAX-based TDGL solver coupled with Neural Rat
 
 # Parameter Recovery and Quantitative Accuracy
 
-[posterior_recovery_multipanel](https://github.com/JSKao/ML-Phys/blob/main/assets/posterior_recovery_multipanel.png)
+[posterior_recovery_multipanel](assets/posterior_recovery_multipanel.png)
 
 
 ---
