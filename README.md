@@ -2,10 +2,9 @@
 
 # Inferring Microscopic Couplings in Type-1.5 Superconductors via Neural Ratio Estimation
 
-[![arXiv](https://img.shields.io/badge/arXiv-2512.xxxxx-B31B1B.svg)]([YOUR_ARXIV_LINK_HERE])
+[![arXiv]]([YOUR_ARXIV_LINK_HERE])
 [![GitHub Stars](https://img.shields.io/github/stars/JSKao/ML-Phys.svg?style=social)](https://github.com/JSKao/ML-Phys)
 
-**Authors:** [Your Name]
 **Keywords:** Simulation-Based Inference (SBI), Ginzburg-Landau (GL) Theory, Differentiable Physics, Condensed Matter Physics.
 
 ---
@@ -20,8 +19,8 @@ We leverage a fully differentiable JAX-based TDGL solver coupled with Neural Rat
 
 
 # Parameter Recovery and Quantitative Accuracy
-*The U-shaped error curve confirms optimal identifiability in the intermediate coupling regime ($\eta \approx 0.8$).*
-[Insert Image of MAE/CI Diagnostic Plot](1. [assets](https://github.com/JSKao/ML-Phys/tree/main/assets)(assets/posterior_recovery_multipanel.png)
+
+[posterior_recovery_multipanel](https://github.com/JSKao/ML-Phys/blob/main/assets/posterior_recovery_multipanel.png)
 
 
 ---
