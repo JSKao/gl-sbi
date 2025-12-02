@@ -47,24 +47,25 @@ def create_train_state(rng, learning_rate, input_shape):
     )
 
 @jax.jit
-def train_step(state, batch_x, batch_theta):
+def train_step(state, batch_x, batch_theta, rng):
     """
     Contrastive training step (Same logic as online, but JIT-ed for speed).
     """
     batch_size = batch_x.shape[0]
     
-    # === Label smoothing ===
-    smoothing = 0.1  
+    # === Asymmetric smoothing ===
     
     # Positive pairs
     pos_x = batch_x
     pos_theta = batch_theta
-    pos_labels = jnp.ones((batch_size, 1)) * (1 - smoothing) + smoothing * 0.5  # 0.95 instead of 1.0
+    pos_labels = jnp.ones((batch_size, 1)) * (1 - 0.05)   # 0.95 smoothing
     
-    # Negative pairs (Shuffle theta)
+     # Negative pairs (Shuffle theta)
+    rng, subkey = jax.random.split(rng)
+    perm = jax.random.permutation(subkey, batch_size)
+    neg_theta = batch_theta[perm]
     neg_x = batch_x
-    neg_theta = jnp.roll(batch_theta, shift=1, axis=0)
-    neg_labels = jnp.zeros((batch_size, 1)) + smoothing * 0.5  # 0.05 instead of 0.0
+    neg_labels = jnp.zeros((batch_size, 1)) + 0.15        # 0.15 smoothing
     
     # Combine
     train_x = jnp.concatenate([pos_x, neg_x], axis=0)
@@ -78,7 +79,7 @@ def train_step(state, batch_x, batch_theta):
 
     loss, grads = jax.value_and_grad(loss_fn)(state.params)
     new_state = state.apply_gradients(grads=grads)
-    return new_state, loss
+    return new_state, loss, rng
 
 @jax.jit
 def eval_step(state, batch_x, batch_theta):
