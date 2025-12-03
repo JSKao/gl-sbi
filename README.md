@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-**Ｉnferring microscopic couplings in Type-1.5 superconductors using Neural Ratio Estimation (NRE).**
+**Inferring microscopic couplings in Type-1.5 superconductors using Neural Ratio Estimation (NRE).**
 
 ---
 
