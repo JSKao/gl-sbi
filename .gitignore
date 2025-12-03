@@ -9,7 +9,7 @@ env/
 venv/
 .venv/
 
-# --- Large Data Files (絕對不要上傳) ---
+# --- Large Data Files  ---
 data/
 *.npz
 *.npy
@@ -19,6 +19,6 @@ data/
 .vscode/
 .idea/
 
-# --- Allow Assets (確保成果圖被上傳) ---
+# --- Allow Assets  ---
 !assets/
 !assets/*.png
