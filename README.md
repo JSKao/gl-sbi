@@ -1,59 +1,78 @@
 
+# Simulation-Based Inference of Ginzburg-Landau Parameters
 
-# Inferring Microscopic Couplings in Superconductors
+[![arXiv](https://arxiv.org/abs/2512.02411)](LINK_TO_ARXIV)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[![arXiv]]([YOUR_ARXIV_LINK_HERE])
-[![GitHub Stars](https://img.shields.io/github/stars/JSKao/ML-Phys.svg?style=social)](https://github.com/JSKao/ML-Phys)
 
-**Keywords:** Simulation-Based Inference (SBI), Ginzburg-Landau (GL) Theory, Differentiable Physics, Condensed Matter Physics.
-
----
-
-## 💡 Abstract & Challenge
-
-This project addresses the challenging inverse problem of inferring microscopic couplings (Josephson coupling $\eta$, Drag $\nu$) from highly complex, metastable vortex patterns in Type-1.5 superconductors. We explicitly demonstrate that the underlying energy landscape is "glassy" (see Hessian Spectrum below), necessitating a likelihood-free approach.
-
-We leverage a fully differentiable JAX-based TDGL solver coupled with Neural Ratio Estimation (NRE).
+**Ｉnferring microscopic couplings in Type-1.5 superconductors using Neural Ratio Estimation (NRE).**
 
 ---
 
+## Key Contributions
 
-# Parameter Recovery and Quantitative Accuracy
-
-[posterior_recovery_multipanel](assets/posterior_recovery_multipanel.png)
-
+* **Differentiable TDGL Solver:** A JAX-based, gauge-invariant Time-Dependent Ginzburg-Landau solver tailored for multi-component systems.
+* **Glassy Landscape Quantification:** Analysis of the Hessian spectrum to demonstrate the "soft mode" proliferation that hinders traditional MCMC.
+* **Likelihood-Free Inference:** Uses Neural Ratio Estimation (NRE) to bypass the intractable likelihood of disordered vortex matter.
+* **Physics Discovery:** Identifies the transient suppression of structure factor $S(k)$ as the dynamical fingerprint of Andreev-Bashkin drag.
 
 ---
 
-## 🛠️ Usage and Reproducibility
+## Overview
 
-### 1. Setup
+### 1. The Challenge: A Glassy Landscape
+Inferring parameters from vortex configurations is ill-posed due to the proliferation of "soft modes" (near-zero eigenvalues in the Hessian).
+
+![Hessian Spectrum](assets/hessian_spectrum.png)
+*Fig 1: The density of states $\rho(\lambda)$ reveals flat directions in the energy landscape.*
+
+### 2. The Solution: Neural Ratio Estimation
+We treat the solver as a stochastic simulator and train a classifier to approximate the likelihood-to-evidence ratio $r(x, \theta)$.
+
+![Schematic](assets/schematic.png)
+*Fig 2: Pipeline integrating the TDGL solver with the contrastive NRE training loop.*
+
+### 3. Results: Accurate Recovery
+The framework reliably recovers the Josephson coupling $\eta$ with calibrated uncertainty (verified via Simulation-Based Calibration).
+
+![Posterior Recovery](assets/posterior_recovery_multipanel.png)
+*Fig 3: Posterior distributions for varying ground-truth coupling strengths.*
+
+---
+
+## 🛠️ Usage
+
+### Installation
 ```bash
-# Clone the repository
-git clone [https://github.com/JSKao/ML-Phys/tree/main]
-cd [ML-Phys]
-
-# Install dependencies (using the environment requirements.txt)
+git clone [https://github.com/JSKao/gl-sbi.git](https://github.com/JSKao/gl-sbi.git)
+cd gl-sbi
 pip install -r requirements.txt
 ````
 
-### 2. Reproduce Comprehensive Results
+### Reproducing Results
 
-To regenerate the data, train the model, and run the comprehensive evaluation:
+**1. Generate Data (TDGL Simulation)**
+Runs the JAX solver to create the vortex dataset.
 
-Bash
-
+```bash
+python -m src.generate_data --config configs/default.yaml
 ```
-# 1. Generate the dataset (Warning: This step is CPU/GPU intensive)
-python -m src.generate_data
 
-# 2. Train the NRE model (Takes ~X hours on Y GPU)
+**2. Train NRE Model**
+Trains the ratio estimator using the contrastive loss.
+
+```bash
 python -m src.train_offline
-
-# 3. Run Quantitative Evaluation and generate all figures (Table I, Diagnostic Plots)
-python -m src.run_comprehensive_tests 
 ```
 
----
+**3. Evaluation & Diagnostics**
+Generates posterior plots, coverage (SBC) analysis, and $S(k)$ drag diagnostics.
 
-> **Code Availability:** The core TDGL solver and NRE architecture are fully differentiable and implemented in JAX/Flax.
+```bash
+python -m src.run_comprehensive_tests
+```
+
+> **Note:** Experimental noise models (STM/TEM) are available in `src/experimental_noise.py`.
+
+-----
+
