@@ -14,6 +14,7 @@ data/
 *.npz
 *.npy
 *.h5
+doc/
 
 # --- IDE Settings (Optional) ---
 .vscode/
