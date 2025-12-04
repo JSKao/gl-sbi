@@ -10,7 +10,7 @@ from src.train_config import CKPT_DIR
 
 # --- Config ---
 # NOTE: CKPT_DIR is imported from train_config
-DATA_PATH = "data/dataset_32.npz" # check your grid size
+DATA_PATH = "data/dataset_64.npz" # check your grid size
 GRID_SIZE = 1000  # Resolution for 1D integration
 TEST_SAMPLES = 200 # Number of SBC samples
 
@@ -38,13 +38,21 @@ def load_model_and_data():
     # 3. Restore Checkpoint using the absolute path
     print(f"Attempting to restore from absolute path: {abs_ckpt_dir}")
     
-    # Try to restore the 'calibrated_' checkpoint
+    # [FIX]: Use list_steps and max() instead of latest_step()
+    try:
+        all_steps = checkpoints.list_steps(abs_ckpt_dir, prefix="calibrated_")
+        if not all_steps:
+             raise FileNotFoundError
+        latest_step = max(all_steps)
+    except Exception:
+        # If list_steps fails, assume no checkpoint is present
+        latest_step = None
+        
     state_dict = checkpoints.restore_checkpoint(
         ckpt_dir=abs_ckpt_dir, 
         target=None, 
         prefix="calibrated_",
-        # Find the latest step number automatically
-        step=checkpoints.latest_step(abs_ckpt_dir, prefix="calibrated_") 
+        step=latest_step
     )
     
     if state_dict is None:
