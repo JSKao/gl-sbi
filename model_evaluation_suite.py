@@ -47,24 +47,91 @@ def create_train_state(rng, input_shape):
         tx=optax.adam(LEARNING_RATE),
     )
 
+def detect_checkpoint_grid_size(abs_ckpt_dir):
+    """Auto-detect the grid size used in checkpoint"""
+    for test_size in [64, 32, 128]:  # Common sizes, 64 first as most likely
+        try:
+            model = NREClassifier()
+            dummy_x = jnp.ones((1, test_size, test_size, 3))
+            dummy_theta = jnp.ones((1, 3))
+            rng = jax.random.PRNGKey(0)
+            variables = model.init(rng, dummy_x, dummy_theta)
+            
+            all_steps = checkpoints.list_steps(abs_ckpt_dir, prefix="calibrated_")
+            if not all_steps:
+                continue
+            
+            restored = checkpoints.restore_checkpoint(
+                ckpt_dir=abs_ckpt_dir,
+                target=None,
+                prefix="calibrated_",
+                step=max(all_steps)
+            )
+            
+            if restored is None:
+                continue
+            
+            # Extract params
+            if hasattr(restored, 'params'):
+                params = restored.params
+            elif 'params' in restored:
+                params = restored['params']
+            else:
+                params = restored
+            
+            # Test if it works
+            _ = model.apply({'params': params}, dummy_x, dummy_theta)
+            return test_size  # Success!
+            
+        except:
+            continue
+    
+    return None  # Failed all sizes
+
 def load_trained_model():
     """Load trained NRE model from checkpoint"""
     print("Loading trained model...")
     abs_ckpt_dir = os.path.abspath(CKPT_DIR)
     
-    input_shape = (GRID_SIZE, GRID_SIZE, 3)
+    # Check if directory exists
+    if not os.path.exists(abs_ckpt_dir):
+        print(f"  ❌ Checkpoint directory doesn't exist: {abs_ckpt_dir}")
+        print("\n  Workflow:")
+        print("    1. python generate_data.py       # If you haven't generated data")
+        print("    2. python train_calibrated.py    # Train the model")
+        print("    3. python model_evaluation_suite.py  # Then run this")
+        return None
+    
+    # Try to detect grid size
+    print("  Detecting checkpoint grid size...")
+    detected_grid = detect_checkpoint_grid_size(abs_ckpt_dir)
+    
+    if detected_grid is None:
+        print(f"  ❌ No valid checkpoint found in {abs_ckpt_dir}")
+        if os.listdir(abs_ckpt_dir):
+            print(f"  Files found:")
+            for f in os.listdir(abs_ckpt_dir)[:5]:
+                print(f"    - {f}")
+        print("\n  Please run: python train_calibrated.py")
+        return None
+    
+    print(f"  ✓ Detected checkpoint grid: {detected_grid}×{detected_grid}")
+    
+    if detected_grid != GRID_SIZE:
+        print(f"  ⚠️  WARNING: Config grid ({GRID_SIZE}) != Checkpoint grid ({detected_grid})")
+        print(f"     Using checkpoint grid size for inference.")
+    
+    # Use detected grid size
+    input_shape = (detected_grid, detected_grid, 3)
     rng = jax.random.PRNGKey(0)
     state = create_train_state(rng, input_shape)
     
     try:
         all_steps = checkpoints.list_steps(abs_ckpt_dir, prefix="calibrated_")
-        if not all_steps:
-            raise FileNotFoundError
         latest_step = max(all_steps)
-        print(f"  Found checkpoint at step {latest_step}")
+        print(f"  Loading checkpoint at step {latest_step}")
     except:
-        print(f"  ❌ No checkpoint found in {abs_ckpt_dir}")
-        print("  Please run 'python train_calibrated.py' first!")
+        print(f"  ❌ Error reading checkpoint")
         return None
     
     restored = checkpoints.restore_checkpoint(
@@ -88,14 +155,17 @@ def load_trained_model():
     print(f"  ✓ Model loaded successfully\n")
     return state
 
-def generate_test_observation(eta_true, B_true, nu_true=0.0, seed=None):
+def generate_test_observation(eta_true, B_true, nu_true=0.0, seed=None, grid_size=None):
     """Generate synthetic observation from ground truth parameters"""
     if seed is None:
         seed = int(eta_true * 10000)
     
+    # Use provided grid_size or fall back to config
+    N = grid_size if grid_size is not None else GRID_SIZE
+    
     key_sim = jax.random.PRNGKey(seed)
     config = SimConfig(
-        N=GRID_SIZE, L=L_SIZE, dt=DT,
+        N=N, L=L_SIZE, dt=DT,
         eta=eta_true, B=B_true, nu=nu_true,
         alpha1=ALPHA1, beta1=BETA1, D1=D1,
         alpha2=ALPHA2, beta2=BETA2, D2=D2
@@ -192,13 +262,14 @@ def compute_posterior_statistics(etas, probs, eta_true):
         'in_95_ci': in_95
     }
 
-def run_posterior_recovery_tests(state):
+def run_posterior_recovery_tests(state, grid_size):
     """Generate multi-panel posterior recovery figure"""
     print("=" * 70)
     print("  ANALYSIS 1: Posterior Recovery Tests")
     print("=" * 70)
     print(f"  Test cases: {TEST_ETAS}")
-    print(f"  Fixed B: {TEST_B_FIXED}\n")
+    print(f"  Fixed B: {TEST_B_FIXED}")
+    print(f"  Using grid: {grid_size}×{grid_size}\n")
     
     n_tests = len(TEST_ETAS)
     fig, axes = plt.subplots(1, n_tests, figsize=(4*n_tests, 3.5))
@@ -211,7 +282,7 @@ def run_posterior_recovery_tests(state):
     for idx, (ax, eta_true) in enumerate(zip(axes, TEST_ETAS)):
         print(f"  Test {idx+1}/{n_tests}: η={eta_true:.2f}")
         
-        obs_img = generate_test_observation(eta_true, TEST_B_FIXED)
+        obs_img = generate_test_observation(eta_true, TEST_B_FIXED, grid_size=grid_size)
         etas, probs = compute_posterior_1d(state, obs_img, TEST_B_FIXED)
         stats = compute_posterior_statistics(etas, probs, eta_true)
         all_stats.append(stats)
@@ -299,10 +370,11 @@ $\eta_{true}$ & Post. Mean & Post. Std & MAE & 68\% CI & 95\% CI \\
 # ANALYSIS 2: SBC Calibration
 # ========================================
 
-def compute_posterior_cdf_at_true(state, eta_true, B_fixed, resolution=200):
+def compute_posterior_cdf_at_true(state, eta_true, B_fixed, grid_size, resolution=200):
     """Compute P(η < η_true | x) for SBC"""
     obs_img = generate_test_observation(
         eta_true, B_fixed, 
+        grid_size=grid_size,
         seed=int(eta_true * 10000 + np.random.randint(1000))
     )
     
@@ -323,20 +395,21 @@ def compute_posterior_cdf_at_true(state, eta_true, B_fixed, resolution=200):
     
     return cdf_at_true
 
-def run_sbc_analysis(state, n_samples=100):
+def run_sbc_analysis(state, grid_size, n_samples=100):
     """Run Simulation-Based Calibration"""
     print("=" * 70)
     print("  ANALYSIS 2: Simulation-Based Calibration")
     print("=" * 70)
     print(f"  Samples: {n_samples}")
-    print(f"  Fixed B: {TEST_B_FIXED}\n")
+    print(f"  Fixed B: {TEST_B_FIXED}")
+    print(f"  Using grid: {grid_size}×{grid_size}\n")
     
     np.random.seed(42)
     test_etas = np.random.uniform(ETA_MIN, ETA_MAX, n_samples)
     
     ranks = []
     for eta_true in tqdm(test_etas, desc="  SBC Progress"):
-        rank = compute_posterior_cdf_at_true(state, eta_true, TEST_B_FIXED)
+        rank = compute_posterior_cdf_at_true(state, eta_true, TEST_B_FIXED, grid_size)
         ranks.append(rank)
     
     ranks = np.array(ranks)
@@ -424,18 +497,20 @@ def main():
     print(f"  Checkpoint: {CKPT_DIR}\n")
     
     # Load model
-    state = load_trained_model()
-    if state is None:
+    result = load_trained_model()
+    if result is None:
         return
+    
+    state, detected_grid = result
     
     # Run analyses
     print("Running evaluations...\n")
     
     # Analysis 1: Posterior recovery
-    all_stats = run_posterior_recovery_tests(state)
+    all_stats = run_posterior_recovery_tests(state, detected_grid)
     
     # Analysis 2: SBC calibration
-    ranks = run_sbc_analysis(state, n_samples=100)
+    ranks = run_sbc_analysis(state, detected_grid, n_samples=100)
     
     print("=" * 70)
     print("  ✓ ALL EVALUATIONS COMPLETE")
@@ -450,4 +525,3 @@ def main():
     print("=" * 70)
 
 if __name__ == "__main__":
-    main()
