@@ -19,7 +19,7 @@ NU_MAX = 0.25  # For model selection task
 # ---  Simulation Defaults (The "Factory Settings") ---
 # Grid & Time
 GRID_SIZE = 64
-L_SIZE = 18.0
+L_SIZE = 32.0
 DT = 0.002
 STEPS_PER_FRAME = 20
 EVOLVE_STEPS = 5000
