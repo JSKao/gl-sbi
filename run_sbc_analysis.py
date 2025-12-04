@@ -10,7 +10,7 @@ from src.train_config import CKPT_DIR
 
 # --- Config ---
 # NOTE: CKPT_DIR is imported from train_config
-DATA_PATH = "data/dataset_64.npz" # check your grid size
+DATA_PATH = "data/dataset_32.npz" # check your grid size
 GRID_SIZE = 1000  # Resolution for 1D integration
 TEST_SAMPLES = 200 # Number of SBC samples
 
