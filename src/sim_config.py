@@ -18,11 +18,11 @@ NU_MAX = 0.25  # For model selection task
 
 # ---  Simulation Defaults (The "Factory Settings") ---
 # Grid & Time
-GRID_SIZE = 32
-L_SIZE = 16.0
+GRID_SIZE = 64
+L_SIZE = 32.0
 DT = 0.002
 STEPS_PER_FRAME = 20
-EVOLVE_STEPS = 1000
+EVOLVE_STEPS = 5000
 
 # Physics Constants (Band 1)
 ALPHA1 = -1.0
@@ -40,7 +40,7 @@ DEFAULT_B   = 0.01
 DEFAULT_NU  = 0.0
 
 # Data Settings
-N_SAMPLES = 8000
+N_SAMPLES = 10000
 BATCH_SIZE = 16
 
 # Model Settings

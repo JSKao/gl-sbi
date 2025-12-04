@@ -8,7 +8,7 @@ Adjust these to optimize convergence speed and stability.
 # Optimization
 BATCH_SIZE = 32
 LEARNING_RATE = 2e-4  # Adam default
-EPOCHS = 50           # 增加一點，因為 offline 訓練很快
+EPOCHS = 80           
 
 # Data Management
 VAL_SPLIT = 0.1       # 10% for validation
